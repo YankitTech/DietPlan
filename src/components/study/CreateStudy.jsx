@@ -1,15 +1,16 @@
 import { useState } from "react";
 
-export default function CreateStudy() {
+export default function CreateStudy({ studies, setStudies }) {
   const [formData, setFormData] = useState({
     studyName: "",
-    studyList: [],
     siteName: "",
     siteList: [],
-    protein: "",
-    fat: "",
-    calorie: "",
     addSite: false,
+    nutrition: {
+      protein: "",
+      fat: "",
+      calorie: "",
+    },
   });
 
   const [errors, setErrors] = useState({
@@ -71,7 +72,6 @@ export default function CreateStudy() {
       return;
     }
 
-    // 🚫 No sites added check
     if (formData.siteList.length === 0) {
       setErrors((prev) => ({
         ...prev,
@@ -80,8 +80,8 @@ export default function CreateStudy() {
       return;
     }
 
-    const isDuplicateStudy = formData.studyList.some(
-      (study) => study.toLowerCase() === trimmedStudy.toLowerCase()
+    const isDuplicateStudy = studies.some(
+      (study) => study.name.toLowerCase() === trimmedStudy.toLowerCase()
     );
 
     if (isDuplicateStudy) {
@@ -92,179 +92,148 @@ export default function CreateStudy() {
       return;
     }
 
-    // Save study
-    setFormData((prev) => ({
-      ...prev,
-      studyList: [...prev.studyList, trimmedStudy],
+    const newStudy = {
+      id: crypto.randomUUID(),
+      name: trimmedStudy,
+      sites: formData.siteList.map((site) => ({
+        id: crypto.randomUUID(),
+        name: site,
+        subjects: [],
+      })),
+      nutrition: { ...formData.nutrition },
+    };
+
+    setStudies((prev) => [...prev, newStudy]);
+
+    setFormData({
       studyName: "",
       siteName: "",
       siteList: [],
-      protein: "",
-      fat: "",
-      calorie: "",
       addSite: false,
-    }));
+      nutrition: {
+        protein: "",
+        fat: "",
+        calorie: "",
+      },
+    });
 
     setErrors({
       studyError: "",
       siteError: "",
     });
 
-    // ✅ Show toast
     setToast("Study saved successfully ✅");
-
-    setTimeout(() => {
-      setToast("");
-    }, 3000);
-
-    console.log("Study:", formData);
-    
+    setTimeout(() => setToast(""), 3000);
   }
 
   return (
-    <div className="min-h-screen w-full p-5 bg-gray-900 relative">
-      {/* Toast */}
+    <div className="min-h-screen p-5 bg-gray-900">
       {toast && (
-        <div className="fixed top-5 right-5 bg-green-600 text-white px-4 py-2 rounded-md shadow-lg">
+        <div className="fixed top-5 right-5 bg-green-600 text-white px-4 py-2 rounded">
           {toast}
         </div>
       )}
 
-      <div className="border-2 p-5 w-full max-w-2xl mx-auto bg-gray-800 rounded-md">
-        <h3 className="mb-4 text-lg font-semibold text-white text-center">
-          Create Study
-        </h3>
+      <form
+        onSubmit={handleSubmit}
+        className="max-w-2xl mx-auto bg-gray-800 p-5 rounded space-y-4"
+      >
+        <input
+          value={formData.studyName}
+          onChange={(e) =>
+            setFormData((p) => ({ ...p, studyName: e.target.value }))
+          }
+          placeholder="Study Name"
+          className="w-full p-2 bg-gray-700 text-white rounded"
+        />
+        <p className="text-red-500">{errors.studyError}</p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Study Name */}
-          <div>
+        <button
+          type="button"
+          onClick={() => setFormData((p) => ({ ...p, addSite: !p.addSite }))}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          {formData.addSite ? "Cancel" : "Add Site"}
+        </button>
+
+        {formData.addSite && (
+          <>
             <input
-              value={formData.studyName}
-              onChange={(e) => {
-                setFormData((prev) => ({
-                  ...prev,
-                  studyName: e.target.value,
-                }));
-                setErrors((prev) => ({ ...prev, studyError: "" }));
-              }}
-              type="text"
-              placeholder="Enter Study Name"
-              className="w-full bg-gray-700 px-3 py-2 text-white rounded-md focus:outline-none"
+              value={formData.siteName}
+              onChange={(e) =>
+                setFormData((p) => ({ ...p, siteName: e.target.value }))
+              }
+              placeholder="Site Name"
+              className="w-full p-2 bg-gray-700 text-white rounded"
             />
-            {errors.studyError && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.studyError}
-              </p>
-            )}
-          </div>
+            <button
+              type="button"
+              onClick={handleAddSite}
+              className="bg-green-600 px-4 py-2 text-white rounded"
+            >
+              Save Site
+            </button>
+            <p className="text-red-500">{errors.siteError}</p>
+          </>
+        )}
 
-          {/* Add Site Button */}
-          <button
-            type="button"
-            onClick={() =>
-              setFormData((prev) => ({
-                ...prev,
-                addSite: !prev.addSite,
-              }))
-            }
-            className="px-4 py-2 bg-blue-600 text-white rounded-md"
-          >
-            {formData.addSite ? "Cancel" : "Add Site"}
-          </button>
-
-          {/* Site Input */}
-          {formData.addSite && (
-            <div>
-              <div className="flex gap-2">
-                <input
-                  value={formData.siteName}
-                  onChange={(e) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      siteName: e.target.value,
-                    }));
-                    setErrors((prev) => ({ ...prev, siteError: "" }));
-                  }}
-                  type="text"
-                  placeholder="Enter Site Name"
-                  className="flex-1 bg-gray-700 px-3 py-2 text-white rounded-md"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddSite}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md"
-                >
-                  Save Site
-                </button>
-              </div>
-              {errors.siteError && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.siteError}
-                </p>
-              )}
+        {formData.siteList.map((site) => (
+          <p key={site} className="text-white">
+            <div className="flex justify-end items-center gap-2">
+              <p className="flex-[3] text-left">{site}</p>
+              <button className=" flex-[1] bg-blue-600 w-full py-2 text-white rounded">
+                Edit
+              </button>
+              <button className=" flex-[1] bg-blue-600 w-full py-2 text-white rounded">
+                Delete
+              </button>
             </div>
-          )}
+          </p>
+        ))}
 
-          {/* Site List */}
-          {formData.siteList.length > 0 && (
-            <div className="text-left space-y-1">
-              {formData.siteList.map((site, index) => (
-                <div key={index} className="text-white">
-                  • {site}
-                </div>
-              ))}
-            </div>
-          )}
+        <input
+          type="number"
+          value={formData.nutrition.protein}
+          onChange={(e) =>
+            setFormData((p) => ({
+              ...p,
+              nutrition: { ...p.nutrition, protein: e.target.value },
+            }))
+          }
+          placeholder="Protein"
+          className="w-full p-2 bg-gray-700 text-white rounded"
+        />
 
-          {/* Nutrition Inputs */}
-          <div className="flex gap-2">
-            <input
-              type="number"
-              value={formData.protein}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  protein: Number(e.target.value),
-                }))
-              }
-              placeholder="Minimum Protein"
-              className="flex-1 bg-gray-700 px-3 py-2 text-white rounded-md"
-            />
-            <input
-              type="number"
-              value={formData.fat}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  fat: Number(e.target.value),
-                }))
-              }
-              placeholder="Maximum Fat"
-              className="flex-1 bg-gray-700 px-3 py-2 text-white rounded-md"
-            />
-            <input
-              type="number"
-              value={formData.calorie}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  calorie: Number(e.target.value),
-                }))
-              }
-              placeholder="Total Calorie"
-              className="flex-1 bg-gray-700 px-3 py-2 text-white rounded-md"
-            />
-          </div>
+        <input
+          type="number"
+          value={formData.nutrition.fat}
+          onChange={(e) =>
+            setFormData((p) => ({
+              ...p,
+              nutrition: { ...p.nutrition, fat: e.target.value },
+            }))
+          }
+          placeholder="Fat"
+          className="w-full p-2 bg-gray-700 text-white rounded"
+        />
 
-          {/* Save Study */}
-          <button
-            type="submit"
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md"
-          >
-            Save Study
-          </button>
-        </form>
-      </div>
+        <input
+          type="number"
+          value={formData.nutrition.calorie}
+          onChange={(e) =>
+            setFormData((p) => ({
+              ...p,
+              nutrition: { ...p.nutrition, calorie: e.target.value },
+            }))
+          }
+          placeholder="Calories"
+          className="w-full p-2 bg-gray-700 text-white rounded"
+        />
+
+        <button className="bg-blue-600 w-full py-2 text-white rounded">
+          Save Study
+        </button>
+      </form>
     </div>
   );
 }
